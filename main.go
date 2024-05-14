@@ -285,6 +285,8 @@ func stringsRunesBytes() {
 	var catStr = stringBuilder.String()
 	fmt.Printf("\n%v\n", catStr)
 
+	fmt.Println("Slices contain pointers to the same data, so if you copy a slice and update it you will update the other slice as well")
+
 	fmt.Println("============================")
 }
 
@@ -362,7 +364,7 @@ func myStructs() {
 	fmt.Println("============================")
 }
 
-func myPointer() {
+func myPointer
 	// pointers store memory locations to variables/values/etc..
 
 	// nil pointer(unless initalized)that will hold an int32
@@ -381,4 +383,36 @@ func myPointer() {
 	// now lets change the value of the pointer p and see that i will change
 	*p = 1
 	fmt.Printf("The value i points to is: %v\n", i)
+
+	// if you use pointers with functions you can save a ton on memory
+	var thing1 = [5]float64{1, 2, 3, 4, 5}
+	fmt.Printf("\nThe mem location of thing1 array is: %p", &thing1)
+	var result [5]float64 = myPointerFuncSquareHeavyMemory(thing1)
+	fmt.Printf("\nThe result is: %v", result)
+	fmt.Printf("\nThe value of thing1 is: %v", thing1)
+	fmt.Printf("\nMaking a compy for our function so potentially more memory")
+
+	var thing3 = [5]float64{1, 2, 3, 4, 5}
+	fmt.Printf("\nThe mem location of thing3 array is: %p", &thing3)
+	var result [5]float64 = myPointerFuncSquareHeavyMemory(thing3)
+	fmt.Printf("\nThe result is: %v", result)
+	fmt.Printf("\nThe value of thing3 is: %v", thing3)
+	fmt.Printf("\nPointers are great when you have to pass in a lot bc you don't have to create copys so you save on memory")
+
 }
+
+func myPointerFuncSquareHeavyMemory(thing2 [5]float64) [5]float64 {
+	// square each item in the array
+	for i := range thing2 {
+		thing2[i] = thing2[i] * thing2[i]
+	}
+}
+
+
+func myPointerFuncSquareLessMemory(thing2 *[5]float64) [5]float64 {
+	// square each item in the array
+	for i := range thing2 {
+		thing2[i] = thing2[i] * thing2[i]
+	}
+}
+
