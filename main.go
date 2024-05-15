@@ -3,12 +3,33 @@ package main
 import (
 	"errors"
 	"fmt"
+	"math/rand"
 	"strings"
+	"sync"
+	"time"
 	"unicode/utf8"
 )
 
 func main() {
-	fmt.Println("___main")
+	fmt.Println("__main")
+	// lets see how channels work
+	myChannelBasicExample()
+	realisticChannelExample()
+
+	// lets see how go routines work
+	fmt.Println("\n___GoRoutines")
+	// toggle these to see diff behavior
+	fireOffGoRoutineExample()
+	fireOffGoRoutineExampleReadLock()
+	fireOffNormalDbCallExample()
+
+	//go basics
+	goBasics()
+	fmt.Println("============================")
+}
+
+func goBasics() {
+
 	// lets see some pointers
 	myPointer()
 
@@ -49,12 +70,12 @@ func main() {
 	printMe(name)
 	basicIfLogic()
 	goConstVarAndBasicDataTypes()
-	fmt.Println("============================")
+
 }
 
 // map is a set of kv pairs where you can do look up by key
 func myMaps() {
-	fmt.Println("___myMaps")
+	fmt.Println("\n___myMaps")
 	// can make a new map with the make function again
 	var myMap map[string]uint8 = make(map[string]uint8)
 	fmt.Println(myMap)
@@ -90,7 +111,7 @@ func myMaps() {
 // slices are just wrappers around arrays
 // general, powerful, and convenient interface to the sequences of data
 func mySlices() {
-	fmt.Println("___mySlices")
+	fmt.Println("\n___mySlices")
 	// by omiting the length value we now have a slice
 	var intSlice []int32 = []int32{4, 5, 6}
 	fmt.Printf("The length is %v with capcity %v\n", len(intSlice), cap(intSlice))
@@ -114,7 +135,7 @@ func mySlices() {
 }
 
 func myArrays() {
-	fmt.Println("___myArrays")
+	fmt.Println("\n___myArrays")
 	// initialize an array of size 3 type int32
 	// arrays are 0 indexed
 	// arrays in go = contiguous in memory
@@ -165,7 +186,7 @@ func myArrays() {
 }
 
 func intDivide(i int, y int) (int, int, error) {
-	fmt.Println("___intDivde")
+	fmt.Println("\n___intDivde")
 	var err error
 
 	if y == 0 {
@@ -178,13 +199,13 @@ func intDivide(i int, y int) (int, int, error) {
 }
 
 func printMe(name string) {
-	fmt.Println("___printMe")
+	fmt.Println("\n___printMe")
 	fmt.Printf("Hey %v, I'm printing from the printMe func\n", name)
 	fmt.Println("============================")
 }
 
 func goConstVarAndBasicDataTypes() {
-	fmt.Println("___goConstVarAndBasicDataTypes")
+	fmt.Println("\n___goConstVarAndBasicDataTypes")
 	fmt.Println("Hello World!")
 
 	// all default unassigned values for number types is 0
@@ -244,7 +265,7 @@ func goConstVarAndBasicDataTypes() {
 }
 
 func basicIfLogic() {
-	fmt.Println("___basicIfLogic")
+	fmt.Println("\n___basicIfLogic")
 	if 1 != 2 && 2 != 3 {
 		fmt.Println("check passed")
 	} else {
@@ -261,7 +282,7 @@ func basicIfLogic() {
 }
 
 func stringsRunesBytes() {
-	fmt.Println("___stringsRunesBytes")
+	fmt.Println("\n___stringsRunesBytes")
 	// strings are reperesented by bytes, ascii
 	// so you gotta remember that when dealing with strings/itterating over them
 	// an easier way to deal with this to cast to a rune([]rune)
@@ -318,12 +339,12 @@ func (ma mobileArmor) transform() (string, error) {
 	return ma.unit, nil
 }
 
-type mobileSuit interface {
-	transform() (string, error)
-}
+// type mobileSuit interface {
+// transform() (string, error)
+// }
 
 func myStructs() {
-	fmt.Println("___myStructs")
+	fmt.Println("\n___myStructs")
 	// how to init structs
 	var myGundam gundam = gundam{pilot: "Cole", unit: "MSZ006Zeta"}
 	var amurosGundam gundam = gundam{pilot: "Amuro", unit: "HivNu"}
@@ -364,7 +385,8 @@ func myStructs() {
 	fmt.Println("============================")
 }
 
-func myPointer
+func myPointer() {
+	fmt.Println("\n___Pointers")
 	// pointers store memory locations to variables/values/etc..
 
 	// nil pointer(unless initalized)that will hold an int32
@@ -416,3 +438,217 @@ func myPointerFuncSquareLessMemory(thing2 *[5]float64) [5]float64 {
 	}
 }
 
+
+// go routines are a way to launch multiple functions and have them execute concurrently
+// concurrency = multiple tasks in progress at the same time
+// concurrency != parallelism, it means a task a can sent off to do work, if it takes a sec,
+// task b can go ahead and get started while we wait on task a
+// NOTE writing to the same mem locations without using a mutex can cause data corruption issues
+var m = sync.Mutex{}
+var rwm = sync.RWMutex{}
+var wg = sync.WaitGroup{}
+var dbData0 = []string{"id1", "id2", "id3", "id4", "id5"}
+var dbData1 = []string{"id1.1", "id2.2", "id3.3", "id4.4", "id5.5"}
+var dbData2 = []string{"id1.11", "id2.22", "id3.33", "id4.44", "id5.55"}
+var results0 = []string{}
+var results1 = []string{}
+var results2 = []string{}
+
+func mockDbCall(i int) {
+	// simulated db call
+	var delay float32 = rand.Float32() * 2000
+	time.Sleep(time.Duration(delay) * time.Millisecond)
+	fmt.Println("The result from the database is:", dbData0[i])
+	results0 = append(results0, dbData0[i])
+}
+
+func fireOffNormalDbCallExample() {
+	fmt.Println("\n__fireOffNormalDbCallExample")
+	// normal implementation
+	fmt.Println("Lets see some mock db calls without go routines")
+	t0 := time.Now()
+	for i := 0; i < len(dbData0); i++ {
+		fmt.Println("calling db")
+		mockDbCall(i)
+	}
+	fmt.Printf("Total executuion time: %v\n", time.Since(t0))
+	fmt.Printf("The results0 are %v\n", results0)
+}
+
+func mockDbCallForGoRoutineExample(i int) {
+	// simulated db call
+	var delay float32 = rand.Float32() * 2000
+	time.Sleep(time.Duration(delay) * time.Millisecond)
+	fmt.Println("The result from the database is:", dbData1[i])
+	m.Lock()
+	results1 = append(results1, dbData0[i])
+	m.Unlock()
+	log(results1)
+	wg.Done()
+}
+
+func fireOffGoRoutineExample() {
+	fmt.Println("\n___fireOffGoRoutineExample")
+	fmt.Println("\nThis allow for only 1 read at a time to our slice")
+	// go routine implementation
+	fmt.Println("Lets see some mock db calls wit go routines")
+	t1 := time.Now()
+	for i := 0; i < len(dbData1); i++ {
+		fmt.Println("calling db(goroutine)")
+		wg.Add(1)
+		go mockDbCallForGoRoutineExample(i)
+	}
+	wg.Wait()
+	fmt.Printf("Total executuion time: %v\n", time.Since(t1))
+	fmt.Printf("The results1 are %v\n", results1)
+}
+
+func mockDbCallForGoRoutineExampleReadLock(i int) {
+	// simulated db call
+	var delay float32 = rand.Float32() * 2000
+	time.Sleep(time.Duration(delay) * time.Millisecond)
+	save(dbData2[i])
+	log(results2)
+	wg.Done()
+}
+
+func fireOffGoRoutineExampleReadLock() {
+	fmt.Println("\n___fireOffGoRoutineExampleReadLock")
+	fmt.Println("\nThis allow for multiple reads to our slice and only blocks on writes")
+	fmt.Println("\nWhich would keep from corrupting data")
+	// go routine implementation
+	fmt.Println("Lets see some mock db calls wit go routines")
+	t2 := time.Now()
+	for i := 0; i < len(dbData1); i++ {
+		fmt.Println("calling db(goroutine)")
+		wg.Add(1)
+		go mockDbCallForGoRoutineExampleReadLock(i)
+	}
+	wg.Wait()
+	fmt.Printf("Total executuion time: %v\n", time.Since(t2))
+	fmt.Printf("The results1 are %v\n", results1)
+}
+
+func save(result string) {
+	m.Lock()
+	results2 = append(results2, result)
+	m.Unlock()
+}
+
+func log(res []string) {
+	rwm.RLock()
+	fmt.Printf("The current results are: %v\n", res)
+	rwm.RUnlock()
+}
+
+// channels are a way for go routines to pass around information
+//  1. channels hold data
+//  2. they are thread safe, ie no data races when reading and writing from memory
+//  3. can listen for when data is added or removed from a channel and can block code
+//     from executing if one of these events happens
+func myChannelBasicExample() {
+	fmt.Println("\n___fireOffMyChannelExample")
+
+	// channel that holds only 1 int value
+	var c = make(chan int)
+	// think of a channel as holding an underlying array
+	// ex. c:[1], array buffer channel that only has room for one value
+
+	go process(c)
+	// print the values popped out of the channel
+	for chanValue := range c {
+		fmt.Println(chanValue)
+	}
+
+	var cbuff = make(chan int, 5)
+	go processBufferChannel(cbuff)
+	// print the values popped out of the channel
+	for chanValue := range cbuff {
+		fmt.Println(chanValue)
+		goDoSomeWork()
+	}
+
+	// // channels are not meant to be run like below without go routines
+	// // add value to channel
+	// // --- c <- 1
+	// // retreive value from a channel
+	// // this pops the value out of the channel and into the variable
+	// // ---- var i = <-c
+	// // running the code just like this will give us a deadlock error
+	// // ---- fmt.Println(i)
+}
+
+func process(c chan int) {
+	// here we close the channel so the funcs using process know the this is done
+	// we use defer to say, do this after the func finishes
+	defer close(c)
+	for i := 0; i < 5; i++ {
+		c <- i
+	}
+	// // add 123 to the channel
+	// // c <- 123
+
+	// // here we close the channel so the funcs using process know the this is done
+	// // close(c)
+}
+
+func processBufferChannel(c chan int) {
+	// here we close the channel so the funcs using process know the this is done
+	// we use defer to say, do this after the func finishes
+	defer close(c)
+	for i := 0; i < 5; i++ {
+		c <- i
+	}
+}
+
+func goDoSomeWork() {
+	time.Sleep(time.Second * 1)
+}
+
+var MAX_CHICKEN_PRICE float32 = 5
+var MAX_TOFU_PRICE float32 = 3
+
+// mock service that tells us when there is a sale on chicken finger
+func realisticChannelExample() {
+
+	var chickenChannel = make(chan string)
+	var tofuChannel = make(chan string)
+	var websites = []string{"walmart.com", "costco.com", "wholefoods.com"}
+	for i := range websites {
+		go checkChickenPrices(websites[i], chickenChannel) // spawn 3 go routines bc 3 websites
+		go checkTofuPrices(websites[i], tofuChannel)
+	}
+	// tell user there is a sale
+	sendMessage(chickenChannel, tofuChannel)
+}
+
+func checkChickenPrices(website string, chickenChannel chan string) {
+	for {
+		time.Sleep(time.Second * 1)
+		var checkenPrice = rand.Float32() * 20
+		if checkenPrice <= MAX_CHICKEN_PRICE {
+			chickenChannel <- website
+			break
+		}
+	}
+}
+
+func checkTofuPrices(website string, tofuChannel chan string) {
+	for {
+		time.Sleep(time.Second * 1)
+		var checkenPrice = rand.Float32() * 20
+		if checkenPrice <= MAX_CHICKEN_PRICE {
+			tofuChannel <- website
+			break
+		}
+	}
+}
+
+func sendMessage(chickenChannel chan string, tofuChannel chan string) {
+	select {
+	case website := <-chickenChannel:
+		fmt.Printf("Found a deal on chicken at %v\n", website)
+	case website := <-tofuChannel:
+		fmt.Printf("Found a deal on tofu at %v\n", website)
+	}
+}
